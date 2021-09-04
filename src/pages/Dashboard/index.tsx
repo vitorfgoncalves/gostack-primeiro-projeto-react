@@ -1,35 +1,63 @@
-import React, { useState, FormEvent } from 'react';
+/* eslint-disable camelcase */
+import React, { useState, useEffect, FormEvent } from 'react';
+import { Link } from 'react-router-dom';
 import { FiChevronRight } from 'react-icons/fi';
 import api from '../../services/api';
 
 import logoImg from '../../assets/github-logo.svg';
 
-import { Title, Form, Repositories } from './styles';
+import { Title, Form, Repositories, Error } from './styles';
 
 interface Repository {
-  fullName: string;
+  full_name: string;
   description: string;
   owner: {
     login: string;
-    avatarURL: string;
+    avatar_url: string;
   };
 }
 
 const Dashboard: React.FC = () => {
   const [newRepo, setNewRepo] = useState('');
-  const [repositories, setRepositories] = useState<Repository[]>([]);
+  const [repositories, setRepositories] = useState<Repository[]>(() => {
+    const storagedRepositories = localStorage.getItem(
+      '@GitHubExplorer:repositories',
+    );
+
+    if (storagedRepositories) {
+      return JSON.parse(storagedRepositories);
+    }
+    return [];
+  });
+  const [inputError, setInputError] = useState('');
+
+  useEffect(() => {
+    localStorage.setItem(
+      '@GitHubExplorer:repositories',
+      JSON.stringify(repositories),
+    );
+  });
 
   async function handleAddRepository(
     e: FormEvent<HTMLFormElement>,
   ): Promise<void> {
     e.preventDefault();
 
-    const response = await api.get<Repository>(`repos/${newRepo}`);
+    if (!newRepo) {
+      setInputError('Digite o autor/nome do repositório!');
+      return;
+    }
+    try {
+      const response = await api.get<Repository>(`repos/${newRepo}`);
 
-    const repository = response.data;
+      const repository = response.data;
 
-    setRepositories([...repositories, repository]);
-    setNewRepo('');
+      setRepositories([...repositories, repository]);
+      setNewRepo('');
+      setInputError('');
+    } catch (error) {
+      setInputError('Erro na busca por esse repositório!');
+    }
   }
 
   return (
@@ -37,7 +65,7 @@ const Dashboard: React.FC = () => {
       <img src={logoImg} alt="GitHub Explorer" />
       <Title>Explore repositórios no GitHub</Title>
 
-      <Form onSubmit={handleAddRepository}>
+      <Form hasError={!!inputError} onSubmit={handleAddRepository}>
         <input
           value={newRepo}
           onChange={e => setNewRepo(e.target.value)}
@@ -46,21 +74,26 @@ const Dashboard: React.FC = () => {
         <button type="submit">Pesquisar</button>
       </Form>
 
+      {inputError && <Error>{inputError}</Error>}
+
       <Repositories>
         {repositories.map(repository => {
           return (
-            <a key={repository.fullName} href="teste">
+            <Link
+              key={repository.full_name}
+              to={`/repository/${repository.full_name}`}
+            >
               <img
-                src={repository.owner.avatarURL}
+                src={repository.owner.avatar_url}
                 alt={repository.owner.login}
               />
               <div>
-                <strong>{repository.fullName}</strong>
+                <strong>{repository.full_name}</strong>
                 <p>{repository.description}</p>
               </div>
 
               <FiChevronRight size={20} />
-            </a>
+            </Link>
           );
         })}
       </Repositories>

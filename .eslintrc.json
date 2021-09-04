@@ -33,7 +33,8 @@
       "import/extensions": ["error","ignorePackages", { "ts": "never", "tsx": "never" }],
      "prettier/prettier": "error",
      "import/prefer-default-export": "off",
-     "@typescript-eslint/explicit-function-return-type" : ["error", {"allowExpressions": true}]
+     "@typescript-eslint/explicit-function-return-type" : ["error", {"allowExpressions": true}],
+     "@typescript-eslint/camelcase": "off"
     },
     "settings": {
       "import/resolver": {
